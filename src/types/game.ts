@@ -1,11 +1,12 @@
-import type { Card, MusicianCard, VenueCard, Zone } from "./cards";
+import type { Card, MusicianCard, RiffCard, VenueCard, Zone } from "./cards";
 
 /** A musician placed on the stage */
 export interface DeployedMusician {
   card: MusicianCard;
   zone: Zone;
   currentTone: number;
-  isDiscordant: boolean;
+  discordantTurnsRemaining: number;
+  attachedRiffs: RiffCard[];
 }
 
 /** A card played face-down as a Soundcheck resource */
@@ -43,6 +44,11 @@ export interface GameState {
   currentPhase: TurnPhase;
   turnNumber: number;
   activeVenue: VenueCard | null;
+  deploysRemaining: number;
+  soundcheckPlayedThisTurn: boolean;
+  lastRoundDamage: [number, number];
+  initiativePlayerIndex: 0 | 1;
+  totalDeploys: [number, number];
 }
 
 /** Game constants */
@@ -54,4 +60,5 @@ export const GAME_CONFIG = {
   HAND_LIMIT: 7,
   DEPLOY_LIMIT: 2,
   SOUNDCHECK_PER_TURN: 1,
+  FREE_STARTING_RESOURCES: 1,
 } as const;
