@@ -1,6 +1,10 @@
+import type { GameState } from "../types/game";
 import type { GameController } from "../game/controller";
 import type { TurnPhase } from "../types/game";
+import type { GameAction } from "../game/actions";
 import { getAIAction } from "./strategy";
+
+type AIStrategy = (state: GameState, playerIndex: 0 | 1) => GameAction;
 
 const PLAYER_INPUT_PHASES: Set<TurnPhase> = new Set([
   "soundcheck",
@@ -13,12 +17,15 @@ const PLAYER_INPUT_PHASES: Set<TurnPhase> = new Set([
 export class AIRunner {
   private stopped = false;
   private pendingTimeout: ReturnType<typeof setTimeout> | null = null;
+  private strategy: AIStrategy;
 
   constructor(
     private controller: GameController,
     private aiPlayerIndex: 0 | 1,
-    private config: { delayMs: number } = { delayMs: 800 }
-  ) {}
+    private config: { delayMs: number; strategy?: AIStrategy } = { delayMs: 800 }
+  ) {
+    this.strategy = config.strategy ?? getAIAction;
+  }
 
   /** If it's the AI's turn and a player-input phase, start auto-playing */
   checkAndRun(): void {
@@ -43,7 +50,7 @@ export class AIRunner {
       if (currentWin) return;
       if (currentState.activePlayerIndex !== this.aiPlayerIndex) return;
 
-      const action = getAIAction(currentState, this.aiPlayerIndex);
+      const action = this.strategy(currentState, this.aiPlayerIndex);
 
       // Defer dispatch to avoid dispatching inside a dispatch callback
       setTimeout(() => {

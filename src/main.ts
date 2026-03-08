@@ -2,7 +2,7 @@ import { registerAllEffects } from "./cards/effects";
 import { createRhythmAndRuinDeck, createHarmonyRisingDeck } from "./cards/decks";
 import { GameController } from "./game/controller";
 import { AIRunner } from "./ai";
-import { TutorialController, createTutorialPlayerDeck, createTutorialAIDeck } from "./tutorial";
+import { TutorialController, createTutorialPlayerDeck, createTutorialAIDeck, getTutorialAIAction } from "./tutorial";
 import { injectStyles } from "./ui/styles";
 import { renderGame, renderStartScreen } from "./ui/renderer";
 import type { RenderOptions } from "./ui/renderer";
@@ -88,7 +88,7 @@ function onStartGame(p1Name: string, p2Name: string, mode: "pvp" | "ai" | "tutor
       rerender();
     });
 
-    aiRunner = new AIRunner(controller, 1, { delayMs: 600 });
+    aiRunner = new AIRunner(controller, 1, { delayMs: 600, strategy: getTutorialAIAction });
   } else if (mode === "ai") {
     const p1Deck = createRhythmAndRuinDeck();
     const p2Deck = createHarmonyRisingDeck();

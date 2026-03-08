@@ -22,11 +22,11 @@ export class TutorialController {
     const step = this.getCurrentStep();
     if (!step || step.allowFreePlay) return true;
 
-    // In restrictive steps, allow PLAY_SOUNDCHECK during soundcheck
-    if (step.phase === "soundcheck" && step.id === "soundcheck-explain") {
+    // In restrictive steps, allow specific actions
+    if (step.id === "soundcheck-explain") {
       return action.type === "PLAY_SOUNDCHECK";
     }
-    if (step.phase === "soundcheck" && step.id === "soundcheck-done") {
+    if (step.id === "soundcheck-done") {
       return action.type === "ADVANCE_PHASE";
     }
 
@@ -46,16 +46,20 @@ export class TutorialController {
 
     // Non-waiting steps auto-advance when conditions change
     if (!step.waitForAction) {
-      // For the welcome message, advance after a brief moment
-      if (step.id === "welcome") return; // Will be advanced by user clicking "Next"
+      // "Next" button steps — advanced by user clicking Next
+      if (step.id === "welcome") return;
+      if (step.id === "explain-resources") return;
+      if (step.id === "zones-explain") return;
+
       if (step.id === "ai-turn-1") {
-        // Advance when it's player 0's turn again
+        // Advance when it's player 0's turn again (turn 2)
         if (state.activePlayerIndex === 0 && state.turnNumber >= 2) {
           this.advance();
         }
         return;
       }
       if (step.id === "ai-turn-2") {
+        // Advance when it's player 0's turn again (turn 3)
         if (state.activePlayerIndex === 0 && state.turnNumber >= 3) {
           this.advance();
         }

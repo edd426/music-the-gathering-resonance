@@ -17,7 +17,7 @@ const PHASE_ORDER: TurnPhase[] = [
 ];
 
 /** Advance to the next phase, applying automatic effects for the new phase */
-export function advancePhase(state: GameState): GameState {
+export function advancePhase(state: GameState, rng?: () => number): GameState {
   const currentIdx = PHASE_ORDER.indexOf(state.currentPhase);
   if (currentIdx === -1) {
     throw new Error(`Unknown phase: ${state.currentPhase}`);
@@ -27,7 +27,7 @@ export function advancePhase(state: GameState): GameState {
 
   // If we've reached the end of phases, end the turn
   if (nextIdx >= PHASE_ORDER.length) {
-    return endTurn(state);
+    return endTurn(state, rng);
   }
 
   const nextPhase = PHASE_ORDER[nextIdx];
@@ -83,7 +83,7 @@ function applyRefreshPhase(state: GameState): GameState {
 }
 
 /** End the current turn: switch active player or advance round */
-export function endTurn(state: GameState): GameState {
+export function endTurn(state: GameState, rng?: () => number): GameState {
   const currentActive = state.activePlayerIndex;
   const otherPlayer = opponentIndex(currentActive);
 
@@ -92,7 +92,7 @@ export function endTurn(state: GameState): GameState {
 
   if (isRoundEnd) {
     // Both players have gone — advance round
-    const newInitiative = calculateInitiative(state.lastRoundDamage);
+    const newInitiative = calculateInitiative(state.lastRoundDamage, rng);
 
     return {
       ...state,

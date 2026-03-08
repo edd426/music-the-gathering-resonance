@@ -89,6 +89,7 @@ export class GameController {
 
       case "PLAY_SOUNDCHECK": {
         if (this.state.currentPhase !== "soundcheck") return;
+        if (this.state.soundcheckPlayedThisTurn) return;
         const card = player.hand[action.handIndex];
         if (!card) return;
         this.state = playSoundcheck(this.state, pIdx, action.handIndex);
@@ -170,7 +171,7 @@ export class GameController {
           this.checkForKOs();
 
           // Auto-advance past strike phase to prevent double attacks
-          this.state = advancePhase(this.state);
+          this.state = advancePhase(this.state, this.rng);
           this.autoAdvance();
         }
         break;
@@ -186,7 +187,7 @@ export class GameController {
       }
 
       case "ADVANCE_PHASE": {
-        this.state = advancePhase(this.state);
+        this.state = advancePhase(this.state, this.rng);
         this.autoAdvance();
         break;
       }
@@ -266,7 +267,7 @@ export class GameController {
           "Drew 2 cards."
         );
       }
-      this.state = advancePhase(this.state);
+      this.state = advancePhase(this.state, this.rng);
 
       // Check win after resonance
       this.winResult = checkWinCondition(this.state);
@@ -280,7 +281,7 @@ export class GameController {
         "System",
         "No attacks on turn 1 — build your board first!"
       );
-      this.state = advancePhase(this.state);
+      this.state = advancePhase(this.state, this.rng);
       this.autoAdvance();
       return;
     }
@@ -289,7 +290,7 @@ export class GameController {
     if (this.state.currentPhase === "discard") {
       const player = getActivePlayer(this.state);
       if (player.hand.length <= GAME_CONFIG.HAND_LIMIT) {
-        this.state = advancePhase(this.state);
+        this.state = advancePhase(this.state, this.rng);
         // After discard we end turn / start new turn — auto-advance the new turn too
         this.autoAdvance();
       }
