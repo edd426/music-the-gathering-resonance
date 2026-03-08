@@ -79,6 +79,18 @@ export class TutorialController {
       }
     }
 
+    // Specific waiting-step triggers based on game state
+    if (step.id === "soundcheck-explain" && state.soundcheckPlayedThisTurn) {
+      this.advance();
+      this.checkProgression(state);
+      return;
+    }
+    if (step.id === "turn2-soundcheck" && state.soundcheckPlayedThisTurn) {
+      this.advance();
+      this.checkProgression(state);
+      return;
+    }
+
     // Phase-matching: if step expects a specific phase and we've moved past it
     if (step.phase !== null && step.playerTurn === 0) {
       if (state.activePlayerIndex !== 0) {
