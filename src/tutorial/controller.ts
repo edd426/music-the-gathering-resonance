@@ -18,20 +18,71 @@ export class TutorialController {
   }
 
   /** Check if an action is allowed given the current tutorial step */
-  isActionAllowed(action: GameAction): boolean {
+  isActionAllowed(action: GameAction, state?: GameState): boolean {
     const step = this.getCurrentStep();
     if (!step || step.allowFreePlay) return true;
 
-    // In restrictive steps, allow specific actions
-    if (step.id === "soundcheck-explain") {
-      return action.type === "PLAY_SOUNDCHECK";
-    }
-    if (step.id === "soundcheck-done") {
+    // Steps that only allow ADVANCE_PHASE
+    const advanceOnlySteps = new Set([
+      "soundcheck-done", "deploy-done", "equip-skip",
+      "turn2-soundcheck-done", "turn2-deploy-done", "turn2-equip-done",
+    ]);
+    if (advanceOnlySteps.has(step.id)) {
       return action.type === "ADVANCE_PHASE";
+    }
+
+    // Steps that require a specific card by name
+    if (step.requiredCardName && state) {
+      const player = state.players[state.activePlayerIndex];
+
+      if (step.phase === "soundcheck" && action.type === "PLAY_SOUNDCHECK") {
+        const card = player.hand[action.handIndex];
+        return card?.name === step.requiredCardName;
+      }
+
+      if (step.phase === "deploy") {
+        if (action.type === "DEPLOY") {
+          const card = player.hand[action.handIndex];
+          if (card?.name !== step.requiredCardName) return false;
+          if (step.requiredZone && action.zone !== step.requiredZone) return false;
+          return true;
+        }
+        // Allow selecting the card (no dispatch yet, just UI state)
+        return false;
+      }
+
+      if (step.phase === "equip-song") {
+        if (action.type === "PLAY_SONG" || action.type === "ATTACH_RIFF" || action.type === "PLAY_VENUE") {
+          const card = player.hand[action.handIndex];
+          return card?.name === step.requiredCardName;
+        }
+        return false;
+      }
+    }
+
+    // Soundcheck step: only allow PLAY_SOUNDCHECK
+    if (step.phase === "soundcheck" && step.waitForAction && !step.allowFreePlay) {
+      return action.type === "PLAY_SOUNDCHECK";
     }
 
     // Default: allow the action
     return true;
+  }
+
+  /** Check if a specific card can be selected during this tutorial step */
+  isCardSelectable(cardName: string): boolean {
+    const step = this.getCurrentStep();
+    if (!step || step.allowFreePlay) return true;
+    if (!step.requiredCardName) return true;
+    return cardName === step.requiredCardName;
+  }
+
+  /** Check if a specific zone can be targeted during this tutorial step */
+  isZoneAllowed(zone: string): boolean {
+    const step = this.getCurrentStep();
+    if (!step || step.allowFreePlay) return true;
+    if (!step.requiredZone) return true;
+    return zone === step.requiredZone;
   }
 
   /** Called after each state change to advance tutorial steps */
@@ -48,25 +99,23 @@ export class TutorialController {
     if (!step.waitForAction) {
       // "Next" button steps — advanced by user clicking Next
       if (step.id === "welcome") return;
+      if (step.id === "explain-stats") return;
       if (step.id === "explain-resources") return;
       if (step.id === "zones-explain") return;
 
       if (step.id === "ai-turn-1") {
-        // Advance when it's player 0's turn again (turn 2)
         if (state.activePlayerIndex === 0 && state.turnNumber >= 2) {
           this.advance();
         }
         return;
       }
       if (step.id === "ai-turn-2") {
-        // Advance when it's player 0's turn again (turn 3)
         if (state.activePlayerIndex === 0 && state.turnNumber >= 3) {
           this.advance();
         }
         return;
       }
       if (step.id === "strike-skipped") {
-        // Auto-advance once we've passed strike phase
         if (state.currentPhase !== "strike") {
           this.advance();
           this.checkProgression(state);
@@ -94,14 +143,11 @@ export class TutorialController {
     // Phase-matching: if step expects a specific phase and we've moved past it
     if (step.phase !== null && step.playerTurn === 0) {
       if (state.activePlayerIndex !== 0) {
-        // It's the opponent's turn — skip to AI turn step or free-play step
         this.advanceToNextApplicable(state);
         return;
       }
       if (state.currentPhase !== step.phase) {
-        // We're in a different phase — the step was satisfied, advance
         this.advance();
-        // Check the new step too
         this.checkProgression(state);
         return;
       }
@@ -136,7 +182,6 @@ export class TutorialController {
         }
       }
     }
-    // No matching step found — enter free play
     this.freePlay = true;
     this.onUpdate();
   }

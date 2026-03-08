@@ -41,6 +41,8 @@ export function setupEventDelegation(
     onTutorialAdvance?: () => void;
     onTutorialDismiss?: () => void;
     isActionAllowed?: (action: GameAction) => boolean;
+    isCardSelectable?: (cardName: string) => boolean;
+    isZoneAllowed?: (zone: string) => boolean;
     onReturnToMenu?: () => void;
     onToggleMute?: () => void;
   }
@@ -119,7 +121,9 @@ export function setupEventDelegation(
 
     // Skip soundcheck
     if (target.closest("[data-action='skip-soundcheck']")) {
-      controller.dispatch({ type: "ADVANCE_PHASE" });
+      const action: GameAction = { type: "ADVANCE_PHASE" };
+      if (callbacks?.isActionAllowed && !callbacks.isActionAllowed(action)) return;
+      controller.dispatch(action);
       checkTurnTransition(controller, uiState, setUIState);
       return;
     }
@@ -138,8 +142,10 @@ export function setupEventDelegation(
 
     // Advance phase
     if (target.closest("[data-action='advance']")) {
+      const action: GameAction = { type: "ADVANCE_PHASE" };
+      if (callbacks?.isActionAllowed && !callbacks.isActionAllowed(action)) return;
       resetSelections(uiState, setUIState);
-      controller.dispatch({ type: "ADVANCE_PHASE" });
+      controller.dispatch(action);
       checkTurnTransition(controller, uiState, setUIState);
       return;
     }
@@ -174,11 +180,14 @@ export function setupEventDelegation(
     const zoneEl = target.closest("[data-zone]") as HTMLElement | null;
     if (zoneEl && phase === "deploy" && uiState.selectedCardIndex !== null) {
       const zone = zoneEl.dataset.zone as Zone;
-      controller.dispatch({
+      if (callbacks?.isZoneAllowed && !callbacks.isZoneAllowed(zone)) return;
+      const deployAction: GameAction = {
         type: "DEPLOY",
         handIndex: uiState.selectedCardIndex,
         zone,
-      });
+      };
+      if (callbacks?.isActionAllowed && !callbacks.isActionAllowed(deployAction)) return;
+      controller.dispatch(deployAction);
       setUIState({ ...uiState, selectedCardIndex: null });
       return;
     }
@@ -263,9 +272,12 @@ export function setupEventDelegation(
       const card = activePlayer.hand[handIndex];
       if (!card) return;
 
+      // Enforce card selectability in tutorial
+      if (callbacks?.isCardSelectable && !callbacks.isCardSelectable(card.name)) return;
+
       handleCardClick(
         card, handIndex, phase, activePlayer, activeIdx,
-        controller, uiState, setUIState, rerender
+        controller, uiState, setUIState, rerender, callbacks
       );
       return;
     }
@@ -281,14 +293,22 @@ function handleCardClick(
   controller: GameController,
   uiState: UIState,
   setUIState: (s: UIState) => void,
-  rerender: () => void
+  rerender: () => void,
+  callbacks?: {
+    isActionAllowed?: (action: GameAction) => boolean;
+    isCardSelectable?: (cardName: string) => boolean;
+    isZoneAllowed?: (zone: string) => boolean;
+  }
 ): void {
   const resources = getAvailableResources(activePlayer);
 
   switch (phase) {
-    case "soundcheck":
-      controller.dispatch({ type: "PLAY_SOUNDCHECK", handIndex });
+    case "soundcheck": {
+      const action: GameAction = { type: "PLAY_SOUNDCHECK", handIndex };
+      if (callbacks?.isActionAllowed && !callbacks.isActionAllowed(action)) return;
+      controller.dispatch(action);
       break;
+    }
 
     case "deploy":
       if (card.type === "musician" && resources >= card.cost) {

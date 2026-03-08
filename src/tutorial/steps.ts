@@ -8,13 +8,17 @@ export interface TutorialStep {
   playerTurn: 0 | null;  // Tutorial player is always 0
   waitForAction: boolean;
   allowFreePlay: boolean;
+  /** If set, only this card (by name) can be clicked during this step */
+  requiredCardName?: string;
+  /** If set, only this zone can be clicked during deploy */
+  requiredZone?: string;
 }
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
   // --- Turn 1: The Basics (no combat) ---
   {
     id: "welcome",
-    message: "Welcome to Resonance: Battle of the Bands! Drain your opponent's Harmony to 0, or clear all their musicians from the stage.",
+    message: "Welcome to Resonance: Battle of the Bands! Drain your opponent's Harmony (health) to 0, or clear all their musicians from the stage to win.",
     highlightSelector: null,
     phase: "soundcheck",
     playerTurn: 0,
@@ -22,8 +26,17 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     allowFreePlay: false,
   },
   {
+    id: "explain-stats",
+    message: "Each musician has Volume (attack power), Tone (health), and Resonance (passive Harmony drain). Cards cost resources shown as pips in the top-right corner.",
+    highlightSelector: "[data-hand-index]",
+    phase: "soundcheck",
+    playerTurn: 0,
+    waitForAction: false,
+    allowFreePlay: false,
+  },
+  {
     id: "explain-resources",
-    message: "You start with 1 Tuning Fork \u2014 a free resource. Resources pay for cards. See the cost pips in each card's top-right corner.",
+    message: "You start with 1 Tuning Fork \u2014 a free resource. To get more, sacrifice a card from your hand face-down during Soundcheck.",
     highlightSelector: ".soundcheck-area",
     phase: "soundcheck",
     playerTurn: 0,
@@ -32,12 +45,13 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: "soundcheck-explain",
-    message: "Sacrifice a card from your hand as another resource. Click a card to play it face-down. You'll have 2 resources to spend!",
+    message: "Click Glitch DJ to sacrifice it as a resource. You'll have 2 resources to spend!",
     highlightSelector: "[data-hand-index]",
     phase: "soundcheck",
     playerTurn: 0,
     waitForAction: true,
     allowFreePlay: false,
+    requiredCardName: "Glitch DJ",
   },
   {
     id: "soundcheck-done",
@@ -59,12 +73,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: "deploy-explain",
-    message: "Click a musician card, then click Front Row to place them. Your first musician should hold the front line!",
+    message: "Click Snare Striker, then click Front Row to deploy. Snare Striker costs 1 resource and has 2 Volume (attack) and 3 Tone (health).",
     highlightSelector: "[data-hand-index]",
     phase: "deploy",
     playerTurn: 0,
     waitForAction: true,
-    allowFreePlay: true,
+    allowFreePlay: false,
+    requiredCardName: "Snare Striker",
+    requiredZone: "front-row",
   },
   {
     id: "deploy-done",
@@ -73,7 +89,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     phase: "deploy",
     playerTurn: 0,
     waitForAction: true,
-    allowFreePlay: true,
+    allowFreePlay: false,
   },
   {
     id: "equip-skip",
@@ -82,7 +98,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     phase: "equip-song",
     playerTurn: 0,
     waitForAction: true,
-    allowFreePlay: true,
+    allowFreePlay: false,
   },
   {
     id: "strike-skipped",
@@ -91,7 +107,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     phase: null,
     playerTurn: null,
     waitForAction: false,
-    allowFreePlay: true,
+    allowFreePlay: false,
   },
   {
     id: "ai-turn-1",
@@ -100,18 +116,19 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     phase: null,
     playerTurn: null,
     waitForAction: false,
-    allowFreePlay: true,
+    allowFreePlay: false,
   },
 
   // --- Turn 2: Combat & Songs ---
   {
     id: "turn2-soundcheck",
-    message: "Turn 2! Play another resource for more spending power.",
+    message: "Turn 2! Sacrifice Timpani Thunderer as a resource \u2014 it costs 3, which is too expensive right now.",
     highlightSelector: "[data-hand-index]",
     phase: "soundcheck",
     playerTurn: 0,
     waitForAction: true,
-    allowFreePlay: true,
+    allowFreePlay: false,
+    requiredCardName: "Timpani Thunderer",
   },
   {
     id: "turn2-soundcheck-done",
@@ -120,21 +137,42 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     phase: "soundcheck",
     playerTurn: 0,
     waitForAction: true,
-    allowFreePlay: true,
+    allowFreePlay: false,
   },
   {
     id: "turn2-deploy",
-    message: "Deploy another musician! Place them next to a same-faction ally for a Chord bonus (+1 Volume, +1 Tone).",
-    highlightSelector: null,
+    message: "Deploy Cymbal Crasher to Front Row! It costs 2 resources (you drew Synth Operator and Power Amp \u2014 save those for later).",
+    highlightSelector: "[data-hand-index]",
     phase: "deploy",
     playerTurn: 0,
     waitForAction: true,
-    allowFreePlay: true,
+    allowFreePlay: false,
+    requiredCardName: "Cymbal Crasher",
+    requiredZone: "front-row",
+  },
+  {
+    id: "turn2-deploy-done",
+    message: "Click Done Deploying to move to the Equip/Song phase.",
+    highlightSelector: "[data-action='advance']",
+    phase: "deploy",
+    playerTurn: 0,
+    waitForAction: true,
+    allowFreePlay: false,
   },
   {
     id: "turn2-equip",
-    message: "Try playing Fortissimo \u2014 it deals 2 damage to an enemy musician. Click the card, then click the target.",
+    message: "Click Fortissimo \u2014 it's a Song that deals 2 damage to an enemy musician's Tone (health). Click it, then click the enemy to target.",
     highlightSelector: null,
+    phase: "equip-song",
+    playerTurn: 0,
+    waitForAction: true,
+    allowFreePlay: false,
+    requiredCardName: "Fortissimo",
+  },
+  {
+    id: "turn2-equip-done",
+    message: "Click Done to move to the Strike phase.",
+    highlightSelector: "[data-action='advance']",
     phase: "equip-song",
     playerTurn: 0,
     waitForAction: true,
@@ -142,7 +180,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: "turn2-strike",
-    message: "Now attack! Click your musician, pick an enemy target, then click Resolve Attacks. Combat is mutual \u2014 both deal damage!",
+    message: "Now attack! Click your musician, pick an enemy target, then click Resolve Attacks. Combat is mutual \u2014 both deal their Volume as damage to each other's Tone!",
     highlightSelector: null,
     phase: "strike",
     playerTurn: 0,
@@ -162,7 +200,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   // --- Turn 3: Free Play ---
   {
     id: "turn3-resonance",
-    message: "Back Line musicians drain enemy Harmony with Resonance each turn. Try placing one there!",
+    message: "Back Line musicians drain enemy Harmony with Resonance each turn. Try placing one there! You're on your own now \u2014 good luck!",
     highlightSelector: null,
     phase: "soundcheck",
     playerTurn: 0,

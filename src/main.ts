@@ -161,7 +161,16 @@ setupEventDelegation(
     },
     isActionAllowed: (action) => {
       if (!tutorialController) return true;
-      return tutorialController.isActionAllowed(action);
+      const state = controller?.getState();
+      return tutorialController.isActionAllowed(action, state ?? undefined);
+    },
+    isCardSelectable: (cardName) => {
+      if (!tutorialController) return true;
+      return tutorialController.isCardSelectable(cardName);
+    },
+    isZoneAllowed: (zone) => {
+      if (!tutorialController) return true;
+      return tutorialController.isZoneAllowed(zone);
     },
     onReturnToMenu,
     onToggleMute: () => {
